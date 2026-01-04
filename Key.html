@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Access Terminal</title>
+    <style>
+        :root {
+            --primary: #00ffcc;
+            --bg: #020617;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --error: #ff4d4d;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 255, 204, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 255, 204, 0.05) 0px, transparent 50%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Modern Glass Card */
+        .terminal-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            position: relative;
+        }
+
+        h3 {
+            color: var(--primary);
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 1.2rem;
+        }
+
+        .status-bar {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            height: 6px;
+            width: 6px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* Result Area */
+        .key-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            min-height: 40px;
+            display: none; /* Auto-show after scan */
+            animation: fadeIn 0.5s ease;
+        }
+
+        #keyDisplay {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1.6rem;
+            font-weight: bold;
+            word-break: break-all;
+            color: #ffffff;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: #020617;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            display: none; /* Auto-show after scan */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 255, 204, 0.3);
+        }
+
+        .copy-btn:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 255, 204, 0.4);
+        }
+
+        .copy-btn:active { transform: translateY(0); }
+
+        /* Loader Style */
+        #loader {
+            padding: 40px 0;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="terminal-card">
+    <h3>Access Key</h3>
+    <div class="status-bar">
+        <span class="dot"></span> <span>ENCRYPTED CONNECTION</span>
+    </div>
+    
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="color: #64748b; font-size: 0.9rem;">Decrypting URL Parameters...</p>
+    </div>
+
+    <div class="key-container" id="keyBox">
+        <div id="keyDisplay"></div>
+    </div>
+
+    <button class="copy-btn" id="copyBtn" onclick="copyKey()">COPY ACCESS KEY</button>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        const ignoredParams = ['m', 'commentPage', 'zx', 'utm_source'];
+        const keyDisplay = document.getElementById("keyDisplay");
+        const keyBox = document.getElementById("keyBox");
+        const copyBtn = document.getElementById("copyBtn");
+        const loader = document.getElementById("loader");
+        
+        let foundKey = null;
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Key Extraction Logic
+        if (urlParams.has('key')) {
+            foundKey = urlParams.get('key');
+        } else {
+            for(const [key, value] of urlParams.entries()) {
+                if (!ignoredParams.includes(key)) {
+                    foundKey = key;
+                    break;
+                }
+            }
+        }
+        if (!foundKey && window.location.hash) {
+            foundKey = window.location.hash.substring(1);
+        }
+
+        // Professional Delay for Feel
+        setTimeout(() => {
+            loader.style.display = "none";
+            
+            if (foundKey && foundKey !== "") {
+                try { foundKey = decodeURIComponent(foundKey); } catch(e) {}
+                keyDisplay.innerText = foundKey;
+            } else {
+                keyDisplay.innerText = "NO KEY FOUND";
+                keyDisplay.style.color = "#ff4d4d";
+                keyBox.style.borderColor = "#ff4d4d";
+            }
+
+            keyBox.style.display = "block";
+            copyBtn.style.display = "block";
+        }, 1200); 
+    });
+
+    function copyKey() {
+        const text = document.getElementById("keyDisplay").innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById("copyBtn");
+            btn.innerText = "COPIED TO CLIPBOARD!";
+            btn.style.background = "#ffffff";
+            setTimeout(() => { 
+                btn.innerText = "COPY ACCESS KEY"; 
+                btn.style.background = "#00ffcc";
+            }, 2000);
+        });
+    }
+</script>
+
+</body>
+  </html>
+  
